@@ -46,6 +46,10 @@ object Issue extends SQLSyntaxSupport[Issue] {
     withSQL(select(sqls.count).from(Issue as i)).map(rs => rs.long(1)).single.apply().get
   }
 
+  def findAllByIds(ids:Seq[Int])(implicit session: DBSession = autoSession): List[Issue] = {
+    findAllBy(sqls.in(i.id, ids))
+  }
+
   def findBy(where: SQLSyntax)(implicit session: DBSession = autoSession): Option[Issue] = {
     withSQL {
       select.from(Issue as i).where.append(where)

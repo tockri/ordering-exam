@@ -31,7 +31,7 @@ object OrderExam {
       (1 to count).foreach(i => {
         val issue = Issue.create(s"Issue ($i)", board.id)
         val biOrder = BoardIssueOrder.create(board.id, issue.id, order)
-        println(s"Issue created: $issue, Order: ${biOrder.arrangeOrderString}")
+        p(IssueWithOrder(issue, biOrder), "Created: ")
         order = order + distance
       })
     }
@@ -44,16 +44,20 @@ object OrderExam {
     }
   }
 
-  private def p(io:IssueWithOrder):Unit = {
-    println(s"${io.subject}:${io.order.arrangeOrderString}")
+  private def p(io:IssueWithOrder, message:String):Unit = {
+    println(s"${message}${io.subject}:${io.order.arrangeOrderString}")
   }
+
+  private def p(io:IssueWithOrder):Unit = p(io, "")
 
   def test(): Unit = {
     withBoard { implicit session => board =>
       val issues = IssueWithOrder.findAll(board.id).toVector
+      println("Before operation:")
       issues.foreach(p)
-      val effected = BoardService.reorder(issues(2).id, Some(issues(0).arrangeOrder), Some(issues(1).arrangeOrder))
-      println("Effected:")
+      println(s"Operation: move '${issues.last.subject}' into between '${issues(0).subject}' and '${issues(1).subject}'")
+      val effected = BoardService.reorder(issues.last.id, Some(issues(0).arrangeOrder), Some(issues(1).arrangeOrder))
+      println("Effected Issues:")
       effected.foreach(p)
     }
   }

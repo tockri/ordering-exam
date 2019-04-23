@@ -28,6 +28,8 @@ object BoardIssueOrder extends SQLSyntaxSupport[BoardIssueOrder] {
   val BigDecimalDigit = 65
   val MinOrder = BigDecimal(0)
   val MaxOrder = BigDecimal((0 until BoardIssueOrder.BigDecimalDigit).map(_ => '9').toArray)
+  val DefaultDistance = BigDecimal(Math.pow(2, 16))
+  val RearrangeDistance = BigDecimal(Math.pow(2, 10))
 
   override val tableName = "board_issue_order"
 
@@ -72,9 +74,14 @@ object BoardIssueOrder extends SQLSyntaxSupport[BoardIssueOrder] {
     }.map(BoardIssueOrder(bio.resultName)).single.apply()
   }
 
+  def findBetween(boardId:Int, lower:BigDecimal, higher:BigDecimal)(implicit session:DBSession = autoSession): List[BoardIssueOrder] =
+    findAllBy(sqls.eq(bio.boardId, boardId)
+      .and.ge(bio.arrangeOrder, lower)
+      .and.le(bio.arrangeOrder, higher))
+
   def findAllBy(where: SQLSyntax)(implicit session: DBSession = autoSession): List[BoardIssueOrder] = {
     withSQL {
-      select.from(BoardIssueOrder as bio).where.append(where)
+      select.from(BoardIssueOrder as bio).where.append(where).orderBy(bio.arrangeOrder)
     }.map(BoardIssueOrder(bio.resultName)).list.apply()
   }
 
