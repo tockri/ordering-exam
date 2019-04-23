@@ -1,0 +1,22 @@
+version: '3'
+services:
+  app:
+    build: ./docker
+    container_name: ordering_exam_app
+    volumes:
+      - .:/mnt/ordering-exam:delegated
+      - $HOME/.m2:/root/.m2:delegated
+      - $HOME/.ivy2:/root/.ivy2:delegated
+      - $HOME/.sbt:/root/.sbt:delegated
+    working_dir: /mnt/ordering-exam
+    depends_on:
+      - mysql
+  mysql:
+    image: mysql:5.6.40
+    container_name: ordering_exam_mysql
+    environment:
+      - MYSQL_ROOT_PASSWORD=sa
+    volumes:
+      - ./docker/mysql/initdb.d/:/docker-entrypoint-initdb.d
+    ports:
+      - "3306"

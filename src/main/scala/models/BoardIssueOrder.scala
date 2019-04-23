@@ -12,10 +12,22 @@ case class BoardIssueOrder(
 
   def destroy()(implicit session: DBSession = BoardIssueOrder.autoSession): Int = BoardIssueOrder.destroy(this)(session)
 
+  private def lpad(digit: Int, bd: BigDecimal): String = {
+    val buf = new StringBuilder(bd.toString())
+    while (buf.length < digit) {
+      buf.insert(0, "0")
+    }
+    buf.toString()
+  }
+
+  lazy val arrangeOrderString: String = lpad(BoardIssueOrder.BigDecimalDigit, arrangeOrder)
 }
 
 
 object BoardIssueOrder extends SQLSyntaxSupport[BoardIssueOrder] {
+  val BigDecimalDigit = 65
+  val MinOrder = BigDecimal(0)
+  val MaxOrder = BigDecimal((0 until BoardIssueOrder.BigDecimalDigit).map(_ => '9').toArray)
 
   override val tableName = "board_issue_order"
 
@@ -46,6 +58,12 @@ object BoardIssueOrder extends SQLSyntaxSupport[BoardIssueOrder] {
 
   def countAll()(implicit session: DBSession = autoSession): Long = {
     withSQL(select(sqls.count).from(BoardIssueOrder as bio)).map(rs => rs.long(1)).single.apply().get
+  }
+
+  def findByOrder(arrangeOrder:BigDecimal)(implicit session:DBSession = autoSession): Option[BoardIssueOrder] = {
+    withSQL {
+      select.from(BoardIssueOrder as bio).where.eq(bio.arrangeOrder, arrangeOrder)
+    }.map(BoardIssueOrder(bio.resultName)).single.apply()
   }
 
   def findBy(where: SQLSyntax)(implicit session: DBSession = autoSession): Option[BoardIssueOrder] = {
