@@ -4,6 +4,8 @@ import scalikejdbc.DBSession
 
 object BoardService {
 
+  val RearrangeDistance = Math.pow(2, 16) // 65536
+
   def reorder(issueId:Int, bet:Option[BigDecimal], ween:Option[BigDecimal])(implicit session:DBSession): Seq[IssueWithOrder] = {
     val lower:BigDecimal = bet.getOrElse(BoardIssueOrder.MinOrder)
     val higher:BigDecimal = ween.getOrElse(BoardIssueOrder.MaxOrder)
