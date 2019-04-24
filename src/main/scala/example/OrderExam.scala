@@ -11,7 +11,7 @@ object OrderExam {
       if (args(0) == "create") {
         create()
       } else if (args(0) == "test") {
-        test()
+        test(if (args.length > 1) args(1).toInt else 1)
       } else if (args(0) == "clear") {
         clear()
       } else {
@@ -25,7 +25,7 @@ object OrderExam {
     clear()
     DB.localTx { implicit session =>
       val board = KanbanBoard.create(1).save()
-      val count = 10
+      val count = 6
       val distance = BigDecimal(10)
       var order = BoardIssueOrder.MinOrder + distance
       (1 to count).foreach(i => {
@@ -45,20 +45,24 @@ object OrderExam {
   }
 
   private def p(io:IssueWithOrder, message:String):Unit = {
-    println(s"${message}${io.subject}:${io.order.arrangeOrderString}")
+    println(s"${message}${io.subject}:${io.order.arrangeOrder}")
   }
 
   private def p(io:IssueWithOrder):Unit = p(io, "")
 
-  def test(): Unit = {
+  def test(idx:Int): Unit = {
     withBoard { implicit session => board =>
-      val issues = IssueWithOrder.findAll(board.id).toVector
+      val before = IssueWithOrder.findAll(board.id).toVector
+      println("###################################")
       println("Before operation:")
-      issues.foreach(p)
-      println(s"Operation: move '${issues.last.subject}' into between '${issues(0).subject}' and '${issues(1).subject}'")
-      val effected = BoardService.reorder(issues.last.id, Some(issues(0).arrangeOrder), Some(issues(1).arrangeOrder))
-      println("Effected Issues:")
-      effected.foreach(p)
+      before.foreach(p)
+      println(s"Operation: move '${before(idx).subject}' into between '${before(2).subject}' and '${before(3).subject}'")
+      val affected = BoardService.locateBetween(before(idx).id, Some(before(2).arrangeOrder), Some(before(3).arrangeOrder))
+      println("Affected Issues:")
+      affected.foreach(p)
+      val after = IssueWithOrder.findAll(board.id)
+      println("After operation:")
+      after.foreach(p)
     }
   }
 

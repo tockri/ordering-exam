@@ -28,8 +28,8 @@ object BoardIssueOrder extends SQLSyntaxSupport[BoardIssueOrder] {
   val BigDecimalDigit = 65
   val MinOrder = BigDecimal(0)
   val MaxOrder = BigDecimal((0 until BoardIssueOrder.BigDecimalDigit).map(_ => '9').toArray)
-  val DefaultDistance = BigDecimal(Math.pow(2, 16))
-  val RearrangeDistance = BigDecimal(Math.pow(2, 10))
+  val DefaultDistance = BigDecimal(Math.pow(2, 4))
+  val RearrangeDistance = BigDecimal(Math.pow(2, 2))
 
   override val tableName = "board_issue_order"
 

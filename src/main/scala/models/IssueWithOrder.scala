@@ -26,16 +26,6 @@ object IssueWithOrder {
     }.map(entity(i.resultName, bio.resultName)).list.apply()
   }
 
-  def findById(issueId: Int)(implicit session:DBSession):Option[IssueWithOrder] = {
-    import models.Issue.i
-    import models.BoardIssueOrder.bio
-    withSQL {
-      select.from(Issue as i)
-        .join(BoardIssueOrder as bio).on(bio.issueId, i.id)
-        .where.eq(i.id, issueId)
-    }.map(entity(i.resultName, bio.resultName)).single.apply()
-  }
-
   def findAllByIds(boardId:Int, issueIds:Seq[Int])(implicit session:DBSession):Seq[IssueWithOrder] = {
     import models.Issue.i
     import models.BoardIssueOrder.bio
