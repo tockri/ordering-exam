@@ -10,8 +10,10 @@ object OrderExam {
       DBs.setupAll()
       if (args(0) == "create") {
         create()
-      } else if (args(0) == "test") {
-        test(if (args.length > 1) args(1).toInt else 1)
+      } else if (args(0) == "test" && args.length > 2) {
+        val from = args(1).toInt
+        val to = args(2).toInt
+        test(from, to)
       } else if (args(0) == "clear") {
         clear()
       } else {
@@ -50,18 +52,24 @@ object OrderExam {
 
   private def p(io:IssueWithOrder):Unit = p(io, "")
 
-  def test(idx:Int): Unit = {
+  def test(from:Int, to:Int): Unit = {
     withBoard { implicit session => board =>
       val before = IssueWithOrder.findAll(board.id).toVector
       println("###################################")
-      println("Before operation:")
-      before.foreach(p)
-      println(s"Operation: move '${before(idx).subject}' into between '${before(2).subject}' and '${before(3).subject}'")
-      val affected = BoardService.locateBetween(before(idx).id, Some(before(2).arrangeOrder), Some(before(3).arrangeOrder))
-      println("Affected Issues:")
+      println("--- Operation: ---")
+      before.zipWithIndex.foreach{case (io, idx) =>
+        if (idx == to) {
+          println("--->")
+        }
+        p(io, if (idx == from) " *<-" else "    ")
+      }
+      val bet = if (to > 0) Some(before(to - 1).arrangeOrder) else None
+      val ween = if (to < before.length) Some(before(to).arrangeOrder) else None
+      val affected = BoardService.locateBetween(before(from).id, bet, ween)
+      println("--- Affected Issues: ---")
       affected.foreach(p)
       val after = IssueWithOrder.findAll(board.id)
-      println("After operation:")
+      println("--- After operation: ---")
       after.foreach(p)
     }
   }
