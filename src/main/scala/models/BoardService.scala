@@ -8,21 +8,22 @@ trait BoardIssueOrderRepository {
 
 object BoardService {
 
-  def locateBetween(issueWithOrder: IssueWithOrder, bet:Option[BigDecimal], ween:Option[BigDecimal])(implicit session:DBSession): Seq[IssueWithOrder] = {
+  def locateBetween(issueWithOrder: IssueWithOrder, bet:Option[BigInt], ween:Option[BigInt])(implicit session:DBSession): Seq[IssueWithOrder] = {
     val bio = issueWithOrder.order
     val affected = reorderInner(bio, bet, ween)
     val issueIds = affected.map(_.issueId)
     IssueWithOrder.findAllByIds(bio.boardId, issueIds)
   }
 
-  private def reorderInner(bio:BoardIssueOrder, bet: Option[BigDecimal], ween: Option[BigDecimal])(implicit session: DBSession): Seq[BoardIssueOrder] = {
-    val lower: BigDecimal = bet.getOrElse(BoardIssueOrder.MinOrder)
-    val higher: BigDecimal = ween.getOrElse(BoardIssueOrder.MaxOrder)
+  private def reorderInner(bio:BoardIssueOrder, bet: Option[BigInt], ween: Option[BigInt])(implicit session: DBSession): Seq[BoardIssueOrder] = {
+    val lower: BigInt = bet.getOrElse(BoardIssueOrder.MinOrder)
+    val higher: BigInt = ween.getOrElse(BoardIssueOrder.MaxOrder)
     if (lower > higher) {
       throw new IllegalArgumentException("arguments must be 'bet' <= 'ween'.")
     } else {
-      val center = (higher + lower) / 2
-      if (higher - lower <= BigDecimal(1)) {
+      val center:BigInt = (higher + lower) / 2
+      println(s"center = $center, lower = $lower , higher = $higher")
+      if (higher - lower <= 1) {
         rebalance(bio.copy(arrangeOrder = center))
       } else {
         List(bio.copy(arrangeOrder = center).save())
@@ -57,22 +58,10 @@ object BoardService {
     }
   }
 
-
-  case class DecimalRange(lower:BigDecimal, higher:BigDecimal) {
-    private def max(a:BigDecimal, b:BigDecimal):BigDecimal = if (a < b) b else a
-    private def min(a:BigDecimal, b:BigDecimal):BigDecimal = if (a > b) b else a
-    def union(other: DecimalRange): DecimalRange = {
-      DecimalRange(min(lower, other.lower), max(higher, other.higher))
-    }
-  }
-  object DecimalRange {
-    def empty(center:BigDecimal) = DecimalRange(center, center)
-  }
-
   case class AffectedBuffer(target:BoardIssueOrder, bios:Seq[BoardIssueOrder]) {
     val length:Int = bios.length
     val (lowerBoundary, higherBoundary) = {
-      val width = (length + 1) * RearrangeDistance / 2
+      val width = RearrangeDistance * (length + 1) / 2
       val center = (bios.head.arrangeOrder + bios.last.arrangeOrder) / 2
       if (center - width < BoardIssueOrder.MinOrder) {
         (BoardIssueOrder.MinOrder, BoardIssueOrder.MinOrder + width * 2)
