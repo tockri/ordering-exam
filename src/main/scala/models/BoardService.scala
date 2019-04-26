@@ -2,6 +2,10 @@ package models
 
 import scalikejdbc.DBSession
 
+trait BoardIssueOrderRepository {
+
+}
+
 object BoardService {
 
   def locateBetween(boardIssueOrderId:Int, bet:Option[BigDecimal], ween:Option[BigDecimal])(implicit session:DBSession): Seq[IssueWithOrder] = {
@@ -19,7 +23,7 @@ object BoardService {
     } else {
       val center = (higher + lower) / 2
       if (higher - lower <= BigDecimal(1)) {
-        rebalance(bio, center)
+        rebalance(bio.copy(arrangeOrder = center))
       } else {
         List(bio.copy(arrangeOrder = center).save())
       }
@@ -29,20 +33,25 @@ object BoardService {
   import BoardIssueOrder.RearrangeDistance
 
 
-  private def rebalance(bio: BoardIssueOrder, center: BigDecimal)(implicit session: DBSession): Seq[BoardIssueOrder] = {
+  private def rebalance(bio: BoardIssueOrder)(implicit session: DBSession): Seq[BoardIssueOrder] = {
     val range = findAllAffected(AffectedBuffer(bio, List(bio)))
     range.bios.zipWithIndex.map {case (bio, idx) =>
-      bio.copy(arrangeOrder = range.lowerBoundary + RearrangeDistance * (idx + 1)).save()
+      val newBoundary = range.lowerBoundary + RearrangeDistance * (idx + 1)
+      println(s"${bio.id}:${bio.arrangeOrder}-->$newBoundary")
+      bio.copy(arrangeOrder = newBoundary).save()
     }
   }
 
   private def findAllAffected(buf:AffectedBuffer)(implicit session:DBSession): AffectedBuffer = {
     val found = BoardIssueOrder.findBetween(buf.boardId, buf.lowerBoundary, buf.higherBoundary)
+    print(s"found(${buf.lowerBoundary}, ${buf.higherBoundary}): [" + found.map(b => s"${b.id}:${b.arrangeOrder}").mkString(", ") + "]")
     val newBuf = buf.update(found)
-    if (buf.needsExpand(newBuf)) {
-      findAllAffected(newBuf)
-    } else {
+    if (buf.lowerBoundary <= newBuf.lowerBoundary && newBuf.higherBoundary <= buf.higherBoundary) {
+      println("*")
       newBuf
+    } else {
+      println(" --> recursive")
+      findAllAffected(newBuf)
     }
   }
 
@@ -73,9 +82,6 @@ object BoardService {
     }
 
     val boardId:Int = bios.head.boardId
-
-    def needsExpand(found:AffectedBuffer):Boolean =
-      lowerBoundary <= found.lowerBoundary && found.higherBoundary <= higherBoundary
 
     def update(found:List[BoardIssueOrder]):AffectedBuffer =
       AffectedBuffer(moving, found.filter(bio => bio.id != moving.id && bio.arrangeOrder < moving.arrangeOrder) ++
