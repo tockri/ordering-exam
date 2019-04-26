@@ -65,7 +65,7 @@ object OrderExam {
       }
       val bet = if (to > 0) Some(before(to - 1).arrangeOrder) else None
       val ween = if (to < before.length) Some(before(to).arrangeOrder) else None
-      val affected = BoardService.locateBetween(before(from).id, bet, ween)
+      val affected = BoardService.locateBetween(before(from), bet, ween)
       println("--- Affected Issues: ---")
       affected.foreach(p)
       val after = IssueWithOrder.findAll(board.id)

@@ -8,8 +8,8 @@ trait BoardIssueOrderRepository {
 
 object BoardService {
 
-  def locateBetween(boardIssueOrderId:Int, bet:Option[BigDecimal], ween:Option[BigDecimal])(implicit session:DBSession): Seq[IssueWithOrder] = {
-    val bio = BoardIssueOrder.find(boardIssueOrderId).getOrElse(throw new IllegalArgumentException())
+  def locateBetween(issueWithOrder: IssueWithOrder, bet:Option[BigDecimal], ween:Option[BigDecimal])(implicit session:DBSession): Seq[IssueWithOrder] = {
+    val bio = issueWithOrder.order
     val affected = reorderInner(bio, bet, ween)
     val issueIds = affected.map(_.issueId)
     IssueWithOrder.findAllByIds(bio.boardId, issueIds)
@@ -34,11 +34,13 @@ object BoardService {
 
 
   private def rebalance(bio: BoardIssueOrder)(implicit session: DBSession): Seq[BoardIssueOrder] = {
-    val range = findAllAffected(AffectedBuffer(bio, List(bio)))
-    range.bios.zipWithIndex.map {case (bio, idx) =>
-      val newBoundary = range.lowerBoundary + RearrangeDistance * (idx + 1)
+    val affected = findAllAffected(AffectedBuffer(bio, List(bio)))
+    BoardIssueOrder.batchDelete(affected.bios.map(_.id))
+
+    affected.bios.zipWithIndex.map {case (bio, idx) =>
+      val newBoundary = affected.lowerBoundary + RearrangeDistance * (idx + 1)
       println(s"${bio.id}:${bio.arrangeOrder}-->$newBoundary")
-      bio.copy(arrangeOrder = newBoundary).save()
+      BoardIssueOrder.create(bio.boardId, bio.issueId, newBoundary)
     }
   }
 
@@ -67,7 +69,7 @@ object BoardService {
     def empty(center:BigDecimal) = DecimalRange(center, center)
   }
 
-  case class AffectedBuffer(moving:BoardIssueOrder, bios:Seq[BoardIssueOrder]) {
+  case class AffectedBuffer(target:BoardIssueOrder, bios:Seq[BoardIssueOrder]) {
     val length:Int = bios.length
     val (lowerBoundary, higherBoundary) = {
       val width = (length + 1) * RearrangeDistance / 2
@@ -84,8 +86,8 @@ object BoardService {
     val boardId:Int = bios.head.boardId
 
     def update(found:List[BoardIssueOrder]):AffectedBuffer =
-      AffectedBuffer(moving, found.filter(bio => bio.id != moving.id && bio.arrangeOrder < moving.arrangeOrder) ++
-        (moving :: found.filter(bio => bio.id != moving.id && moving.arrangeOrder < bio.arrangeOrder)))
+      AffectedBuffer(target, found.filter(bio => bio.id != target.id && bio.arrangeOrder < target.arrangeOrder) ++
+        (target :: found.filter(bio => bio.id != target.id && target.arrangeOrder < bio.arrangeOrder)))
   }
 
 }

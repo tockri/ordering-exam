@@ -146,6 +146,12 @@ object BoardIssueOrder extends SQLSyntaxSupport[BoardIssueOrder] {
     }.update.apply()
   }
 
+  def batchDelete(ids: Seq[Int])(implicit session: DBSession = autoSession): Int = {
+    withSQL {
+      delete.from(BoardIssueOrder).where.in(column.id, ids)
+    }.update.apply()
+  }
+
   def clear()(implicit session: DBSession = autoSession): Unit = {
     withSQL {
       delete.from(BoardIssueOrder)
