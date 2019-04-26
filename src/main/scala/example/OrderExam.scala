@@ -59,7 +59,7 @@ object OrderExam {
   }
 
   private def p(io:IssueWithOrder, message:String):Unit = {
-    println(s"$message${io.subject}:${io.order.arrangeOrder}")
+    println(s"$message${io.subject}:${io.order.issueId}:${io.order.arrangeOrder}")
   }
 
   private def p(io:IssueWithOrder):Unit = p(io, "")

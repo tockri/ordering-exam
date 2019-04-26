@@ -27,7 +27,8 @@ case class BoardIssueOrder(
 object BoardIssueOrder extends SQLSyntaxSupport[BoardIssueOrder] {
   val BigIntDigit = 65
   val MinOrder = BigInt(0)
-  val MaxOrder = BigInt((0 until BoardIssueOrder.BigIntDigit).map(_ => '9').mkString(""))
+  //val MaxOrder = BigInt((0 until BoardIssueOrder.BigIntDigit).map(_ => '9').mkString(""))
+  val MaxOrder = BigInt(200)
   val DefaultDistance = BigInt(Math.pow(2, 4).toInt)
   val RearrangeDistance = BigInt(Math.pow(2, 2).toInt)
 

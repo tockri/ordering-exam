@@ -16,14 +16,13 @@ object BoardService {
   }
 
   private def reorderInner(bio:BoardIssueOrder, bet: Option[BigInt], ween: Option[BigInt])(implicit session: DBSession): Seq[BoardIssueOrder] = {
-    val lower: BigInt = bet.getOrElse(BoardIssueOrder.MinOrder)
-    val higher: BigInt = ween.getOrElse(BoardIssueOrder.MaxOrder)
+    val lower: BigInt = bet.getOrElse(BoardIssueOrder.MinOrder - 1)
+    val higher: BigInt = ween.getOrElse(BoardIssueOrder.MaxOrder + 1)
     if (lower > higher) {
       throw new IllegalArgumentException("arguments must be 'bet' <= 'ween'.")
     } else {
       val center:BigInt = (higher + lower) / 2
-      println(s"center = $center, lower = $lower , higher = $higher")
-      if (higher - lower <= 1) {
+      if ((higher - center).abs <= 1 || (lower - center).abs <= 1) {
         rebalance(bio.copy(arrangeOrder = center))
       } else {
         List(bio.copy(arrangeOrder = center).save())
@@ -40,15 +39,15 @@ object BoardService {
 
     affected.bios.zipWithIndex.map {case (bio, idx) =>
       val newBoundary = affected.lowerBoundary + RearrangeDistance * (idx + 1)
-      println(s"${bio.id}:${bio.arrangeOrder}-->$newBoundary")
+      println(s"${bio.issueId}:${bio.arrangeOrder}-->$newBoundary")
       BoardIssueOrder.create(bio.boardId, bio.issueId, newBoundary)
     }
   }
 
   private def findAllAffected(buf:AffectedBuffer)(implicit session:DBSession): AffectedBuffer = {
     val found = BoardIssueOrder.findBetween(buf.boardId, buf.lowerBoundary, buf.higherBoundary)
-    print(s"found(${buf.lowerBoundary}, ${buf.higherBoundary}): [" + found.map(b => s"${b.id}:${b.arrangeOrder}").mkString(", ") + "]")
     val newBuf = buf.update(found)
+    print(s"affected(${buf.lowerBoundary}, ${buf.higherBoundary}): [" + newBuf.bios.map(b => s"${b.issueId}:${b.arrangeOrder}").mkString(", ") + "]")
     if (buf.lowerBoundary <= newBuf.lowerBoundary && newBuf.higherBoundary <= buf.higherBoundary) {
       println("*")
       newBuf
@@ -74,9 +73,11 @@ object BoardService {
 
     val boardId:Int = bios.head.boardId
 
-    def update(found:List[BoardIssueOrder]):AffectedBuffer =
-      AffectedBuffer(target, found.filter(bio => bio.id != target.id && bio.arrangeOrder < target.arrangeOrder) ++
-        (target :: found.filter(bio => bio.id != target.id && target.arrangeOrder < bio.arrangeOrder)))
+    def update(found:List[BoardIssueOrder]):AffectedBuffer = {
+      val left = found.filter(bio => bio.id != target.id && bio.arrangeOrder < target.arrangeOrder)
+      val right = found.filter(bio => bio.id != target.id && target.arrangeOrder < bio.arrangeOrder)
+      AffectedBuffer(target, left ++ (target :: right))
+    }
   }
 
 }
