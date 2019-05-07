@@ -23,6 +23,7 @@ object OrderExam {
       } else {
         println(s"Unknown command: ${args(0)}")
       }
+      DBs.closeAll()
     }
   }
 

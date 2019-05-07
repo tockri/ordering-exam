@@ -19,7 +19,7 @@ object BoardService {
     val lower: BigInt = bet.getOrElse(BoardIssueOrder.MinOrder - 1)
     val higher: BigInt = ween.getOrElse(BoardIssueOrder.MaxOrder + 1)
     if (lower > higher) {
-      throw new IllegalArgumentException("arguments must be 'bet' <= 'ween'.")
+      throw new IllegalArgumentException(s"arguments must be 'bet' <= 'ween'. bet=$bet, ween=$ween")
     } else {
       val center:BigInt = (higher + lower) / 2
       if ((higher - center).abs <= 1 || (lower - center).abs <= 1) {
