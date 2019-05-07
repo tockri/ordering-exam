@@ -57,7 +57,7 @@ object BoardService {
     }
   }
 
-  case class AffectedBuffer(target:BoardIssueOrder, bios:Seq[BoardIssueOrder]) {
+  private case class AffectedBuffer(target:BoardIssueOrder, bios:Seq[BoardIssueOrder]) {
     val length:Int = bios.length
     val (lowerBoundary, higherBoundary) = {
       val width = RearrangeDistance * (length + 1) / 2
